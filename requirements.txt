@@ -1,0 +1,9 @@
+langchain
+langchain-classic
+langchain-community
+langchain-groq
+wikipedia
+python-dotenv
+pydantic
+duckduckgo-search
+flask

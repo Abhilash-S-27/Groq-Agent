@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Research Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0f;
+      --bg-card:   #12121a;
+      --bg-input:  #1a1a25;
+      --bg-hover:  #1e1e2a;
+      --border:    #2a2a3a;
+      --text:      #e4e4ed;
+      --text-dim:  #8888a0;
+      --accent:    #6c5ce7;
+      --accent-2:  #a855f7;
+      --green:     #10b981;
+      --blue:      #3b82f6;
+      --orange:    #f59e0b;
+      --red:       #ef4444;
+      --cyan:      #22d3ee;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,.4);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header .subtitle { font-size: 12px; color: var(--text-dim); }
+    .status-bar { display: flex; gap: 16px; align-items: center; }
+    .status-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+    .btn-clear {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-clear:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    /* ── Chat Area ─────────────────────────────────────────── */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scroll-behavior: smooth;
+    }
+    .chat-area::-webkit-scrollbar { width: 6px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Welcome Screen ────────────────────────────────────── */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      text-align: center;
+      gap: 24px;
+      padding: 40px;
+    }
+    .welcome-icon {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+      box-shadow: 0 0 40px rgba(108,92,231,.3);
+    }
+    .welcome h2 { font-size: 24px; font-weight: 700; }
+    .welcome p { color: var(--text-dim); max-width: 460px; line-height: 1.6; }
+    .suggestions {
+      display: flex; flex-wrap: wrap;
+      gap: 10px; justify-content: center;
+      max-width: 600px;
+    }
+    .suggestion {
+      padding: 10px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .suggestion:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    /* ── Messages ───────────────────────────────────────────── */
+    .message { display: flex; gap: 12px; max-width: 800px; width: 100%; margin: 0 auto; }
+    .message.user { flex-direction: row-reverse; }
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .message.user .avatar { background: linear-gradient(135deg, var(--blue), var(--cyan)); }
+    .message.bot .avatar  { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+
+    .bubble {
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      line-height: 1.6;
+      font-size: 14px;
+      max-width: 85%;
+    }
+    .message.user .bubble {
+      background: linear-gradient(135deg, var(--accent), #5a4bd1);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .message.bot .bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    /* ── Research Card (structured response) ────────────────── */
+    .research-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      max-width: 85%;
+    }
+    .rc-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, rgba(108,92,231,.15), rgba(168,85,247,.1));
+      border-bottom: 1px solid var(--border);
+    }
+    .rc-header .rc-icon { font-size: 18px; }
+    .rc-header h3 { font-size: 15px; font-weight: 600; }
+    .rc-body { padding: 16px 18px; }
+    .rc-body p { line-height: 1.7; color: var(--text); font-size: 13.5px; }
+    .rc-section { margin-top: 14px; }
+    .rc-section-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .rc-sources a {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--cyan);
+      text-decoration: none;
+      margin: 3px 4px 3px 0;
+      transition: all .2s;
+    }
+    .rc-sources a:hover {
+      border-color: var(--cyan);
+      background: rgba(34,211,238,.06);
+    }
+    .rc-tools {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .rc-tool {
+      padding: 4px 10px;
+      background: rgba(16,185,129,.1);
+      border: 1px solid rgba(16,185,129,.25);
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--green);
+    }
+
+    /* ── Thinking / Loading ─────────────────────────────────── */
+    .thinking {
+      display: flex;
+      gap: 12px;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .thinking-dots {
+      display: flex; gap: 5px;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .thinking-dots span {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: bounce .6s infinite alternate;
+    }
+    .thinking-dots span:nth-child(2) { animation-delay: .2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce {
+      to { opacity: .3; transform: translateY(-4px); }
+    }
+    .thinking-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      padding-top: 6px;
+      transition: all .3s;
+    }
+    .thinking-label.tool-active {
+      color: var(--green);
+    }
+
+    /* ── Timer ─────────────────────────────────────────────── */
+    .timer {
+      font-size: 11px;
+      color: var(--text-dim);
+      padding-top: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Input Area ─────────────────────────────────────────── */
+    .input-area {
+      padding: 16px 24px 20px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .input-wrapper {
+      display: flex;
+      gap: 10px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    #query-input {
+      flex: 1;
+      padding: 14px 18px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+      resize: none;
+      min-height: 48px;
+      max-height: 120px;
+    }
+    #query-input::placeholder { color: var(--text-dim); }
+    #query-input:focus { border-color: var(--accent); }
+    #send-btn {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .15s, opacity .2s;
+      flex-shrink: 0;
+    }
+    #send-btn:hover { transform: scale(1.05); }
+    #send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .input-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🔬</div>
+      <div>
+        <h1>AI Research Agent</h1>
+        <div class="subtitle">Powered by Groq &bull; LangChain</div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-pill">
+        <span class="status-dot"></span> Online
+      </div>
+      <div class="status-pill" id="query-count">Queries: 0</div>
+      <button class="btn-clear" onclick="clearChat()">Clear Chat</button>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-area" id="chat-area">
+    <div class="welcome" id="welcome-screen">
+      <div class="welcome-icon">🔬</div>
+      <h2>What would you like to research?</h2>
+      <p>I can search Wikipedia, browse the web, and compile structured research reports. Ask me anything!</p>
+      <div class="suggestions">
+        <div class="suggestion" onclick="useSuggestion(this)">🧬 Explain CRISPR gene editing</div>
+        <div class="suggestion" onclick="useSuggestion(this)">🚀 Latest SpaceX missions</div>
+        <div class="suggestion" onclick="useSuggestion(this)">🤖 History of artificial intelligence</div>
+        <div class="suggestion" onclick="useSuggestion(this)">🌍 Climate change effects in 2025</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="query-input" placeholder="Ask me to research anything..." rows="1"
+                onkeydown="handleKey(event)"></textarea>
+      <button id="send-btn" onclick="sendQuery()">➤</button>
+    </div>
+    <div class="input-hint">Press <b>Enter</b> to send &bull; <b>Shift+Enter</b> for new line</div>
+  </div>
+
+<script>
+  const chatArea  = document.getElementById('chat-area');
+  const input     = document.getElementById('query-input');
+  const sendBtn   = document.getElementById('send-btn');
+  const welcome   = document.getElementById('welcome-screen');
+  const qCount    = document.getElementById('query-count');
+  let queryNum = 0;
+  let busy = false;
+
+  // Auto-resize textarea
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendQuery();
+    }
+  }
+
+  function useSuggestion(el) {
+    input.value = el.textContent.replace(/^[\u{1F300}-\u{1FAD6}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u, '');
+    input.focus();
+    sendQuery();
+  }
+
+  function scrollBottom() {
+    chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
+  }
+
+  function addUserMsg(text) {
+    if (welcome) welcome.remove();
+    const div = document.createElement('div');
+    div.className = 'message user';
+    div.innerHTML = `
+      <div class="avatar">👤</div>
+      <div class="bubble">${escapeHtml(text)}</div>`;
+    chatArea.appendChild(div);
+    scrollBottom();
+  }
+
+  function showThinking() {
+    const div = document.createElement('div');
+    div.className = 'thinking';
+    div.id = 'thinking-indicator';
+    div.innerHTML = `
+      <div class="avatar" style="background:linear-gradient(135deg,var(--accent),var(--accent-2))">🔬</div>
+      <div>
+        <div class="thinking-dots"><span></span><span></span><span></span></div>
+        <div class="thinking-label" id="thinking-label">Thinking&hellip;</div>
+        <div class="timer" id="thinking-timer">0.0s</div>
+      </div>`;
+    chatArea.appendChild(div);
+    scrollBottom();
+  }
+
+  function updateThinkingLabel(text, isToolActive) {
+    const label = document.getElementById('thinking-label');
+    if (label) {
+      label.textContent = text;
+      label.className = 'thinking-label' + (isToolActive ? ' tool-active' : '');
+    }
+    scrollBottom();
+  }
+
+  function removeThinking() {
+    const el = document.getElementById('thinking-indicator');
+    if (el) el.remove();
+  }
+
+  function addBotCard(data) {
+    const div = document.createElement('div');
+    div.className = 'message bot';
+
+    // Build sources
+    let sourcesHtml = '';
+    if (data.sources && data.sources.length) {
+      const links = data.sources.map(s => {
+        if (s.startsWith('http')) return `<a href="${s}" target="_blank">🔗 ${new URL(s).hostname}</a>`;
+        return `<a href="#" onclick="return false">📄 ${escapeHtml(s)}</a>`;
+      }).join('');
+      sourcesHtml = `<div class="rc-section"><div class="rc-section-title">Sources</div><div class="rc-sources">${links}</div></div>`;
+    }
+
+    // Build tools
+    let toolsHtml = '';
+    if (data.tools_used && data.tools_used.length) {
+      const tags = data.tools_used.map(t => `<span class="rc-tool">${escapeHtml(t)}</span>`).join('');
+      toolsHtml = `<div class="rc-section"><div class="rc-section-title">Tools Used</div><div class="rc-tools">${tags}</div></div>`;
+    }
+
+    div.innerHTML = `
+      <div class="avatar">🔬</div>
+      <div class="research-card">
+        <div class="rc-header">
+          <span class="rc-icon">📋</span>
+          <h3>${escapeHtml(data.topic || 'Research Result')}</h3>
+        </div>
+        <div class="rc-body">
+          <p>${formatText(data.summary || data.raw || '')}</p>
+          ${sourcesHtml}
+          ${toolsHtml}
+        </div>
+      </div>`;
+    chatArea.appendChild(div);
+    scrollBottom();
+  }
+
+  function addBotText(text) {
+    const div = document.createElement('div');
+    div.className = 'message bot';
+    div.innerHTML = `
+      <div class="avatar">🔬</div>
+      <div class="bubble">${formatText(text)}</div>`;
+    chatArea.appendChild(div);
+    scrollBottom();
+  }
+
+  function addErrorMsg(text) {
+    const div = document.createElement('div');
+    div.className = 'message bot';
+    div.innerHTML = `
+      <div class="avatar" style="background:linear-gradient(135deg,var(--red),#dc2626)">⚠️</div>
+      <div class="bubble" style="border-color:rgba(239,68,68,.3);color:var(--red)">${escapeHtml(text)}</div>`;
+    chatArea.appendChild(div);
+    scrollBottom();
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function formatText(s) {
+    // Basic formatting: newlines, bold, inline code
+    return escapeHtml(s)
+      .replace(/\n/g, '<br>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`(.*?)`/g, '<code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-family:JetBrains Mono,monospace;font-size:12px">$1</code>');
+  }
+
+  async function sendQuery() {
+    const text = input.value.trim();
+    if (!text || busy) return;
+
+    busy = true;
+    sendBtn.disabled = true;
+    input.value = '';
+    input.style.height = 'auto';
+
+    addUserMsg(text);
+    showThinking();
+
+    // Start a live timer
+    const startTime = Date.now();
+    const timerInterval = setInterval(() => {
+      const el = document.getElementById('thinking-timer');
+      if (el) el.textContent = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+    }, 100);
+
+    const TOOL_LABELS = {
+      search_wikipedia: '📚 Searching Wikipedia...',
+      search_web: '🌐 Searching the web...',
+      save_research_to_file: '💾 Saving to file...',
+      get_current_datetime: '🕐 Getting date/time...',
+    };
+
+    try {
+      const res = await fetch('/api/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: text }),
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop();          // keep incomplete line
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let event;
+          try { event = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (event.type === 'thinking') {
+            updateThinkingLabel('Thinking...', false);
+          } else if (event.type === 'tool_start') {
+            const label = TOOL_LABELS[event.tool] || ('🛠️ Using ' + event.tool + '...');
+            updateThinkingLabel(label, true);
+          } else if (event.type === 'tool_done') {
+            updateThinkingLabel('Processing results...', false);
+          } else if (event.type === 'result') {
+            clearInterval(timerInterval);
+            removeThinking();
+            queryNum++;
+            qCount.textContent = `Queries: ${queryNum}`;
+            if (event.structured) {
+              addBotCard(event);
+            } else {
+              addBotText(event.raw || JSON.stringify(event));
+            }
+          } else if (event.type === 'error') {
+            clearInterval(timerInterval);
+            removeThinking();
+            addErrorMsg(event.message || 'Unknown error');
+          }
+        }
+      }
+    } catch (e) {
+      clearInterval(timerInterval);
+      removeThinking();
+      addErrorMsg('Connection error - is the server running?');
+    } finally {
+      busy = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  async function clearChat() {
+    try { await fetch('/api/clear', { method: 'POST' }); } catch {}
+    chatArea.innerHTML = `
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">🔬</div>
+        <h2>What would you like to research?</h2>
+        <p>I can search Wikipedia, browse the web, and compile structured research reports. Ask me anything!</p>
+        <div class="suggestions">
+          <div class="suggestion" onclick="useSuggestion(this)">🧬 Explain CRISPR gene editing</div>
+          <div class="suggestion" onclick="useSuggestion(this)">🚀 Latest SpaceX missions</div>
+          <div class="suggestion" onclick="useSuggestion(this)">🤖 History of artificial intelligence</div>
+          <div class="suggestion" onclick="useSuggestion(this)">🌍 Climate change effects in 2025</div>
+        </div>
+      </div>`;
+    queryNum = 0;
+    qCount.textContent = 'Queries: 0';
+  }
+
+  input.focus();
+</script>
+</body>
+</html>
+
